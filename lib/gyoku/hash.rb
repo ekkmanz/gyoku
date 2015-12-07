@@ -13,14 +13,19 @@ module Gyoku
         self_closing = key.to_s[-1, 1] == "/"
         escape_xml = key.to_s[-1, 1] != "!"
         xml_key = XMLKey.create key, options
-
+        xml_attributes = {}
+        attributes.each do |attr_name, attr_value|
+          xml_attr = XMLKey.create attr_name.to_sym, options
+          xml_attributes[xml_attr.to_sym] = attr_value
+        end
+        
         case
           when :content! === key  then xml << XMLValue.create(value, escape_xml)
-          when ::Array === value  then xml << Array.to_xml(value, xml_key, escape_xml, attributes, options.merge(:self_closing => self_closing))
-          when ::Hash === value   then xml.tag!(xml_key, attributes) { xml << Hash.to_xml(value, options) }
-          when self_closing       then xml.tag!(xml_key, attributes)
+          when ::Array === value  then xml << Array.to_xml(value, xml_key, escape_xml, xml_attributes, options.merge(:self_closing => self_closing))
+          when ::Hash === value   then xml.tag!(xml_key, xml_attributes) { xml << Hash.to_xml(value, options) }
+          when self_closing       then xml.tag!(xml_key, xml_attributes)
           when NilClass === value then xml.tag!(xml_key, "xsi:nil" => "true")
-          else                         xml.tag!(xml_key, attributes) { xml << XMLValue.create(value, escape_xml) }
+          else                         xml.tag!(xml_key, xml_attributes) { xml << XMLValue.create(value, escape_xml) }
         end
       end
     end
